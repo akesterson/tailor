@@ -20,9 +20,9 @@ module Tailor
         @button1 = Wx::Button.new(@mainpanel, -1, 'Button 1')
         @button2 = Wx::Button.new(@mainpanel, -1, 'Button 2')
         @button3 = Wx::Button.new(@mainpanel, -1, 'Button 3')
-        @mainpanel_sizer.add(@Button1, -1, Wx::GROW|Wx::ALL, 2)
-        @mainpanel_sizer.add(@Button2, -1, Wx::GROW|Wx::ALL, 2)
-        @mainpanel_sizer.add(@Button3, -1, Wx::GROW|Wx::ALL, 2)
+        @mainpanel_sizer.add(@button1, -1, Wx::GROW|Wx::ALL, 2)
+        @mainpanel_sizer.add(@button2, -1, Wx::GROW|Wx::ALL, 2)
+        @mainpanel_sizer.add(@button3, -1, Wx::GROW|Wx::ALL, 2)
         
         show()
       end
