@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/akesterson/tailor.png?label=ready&title=Ready)](https://waffle.io/akesterson/tailor)
 tailor
 ==========
 
