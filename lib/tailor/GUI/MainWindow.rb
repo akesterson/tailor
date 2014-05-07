@@ -46,6 +46,7 @@ module Tailor
         button = Wx::Button.new(@mainPanel, Wx::ID_ANY, "Click me")
         evt_button(button.get_id()) { |event| on_clickme(event) }
         @mainPanelSizer.add(button, 0, Wx::EXPAND|Wx::ALL, 2)
+        @mainPanelSizer.set_size_hints(@mainPanel)
         @mainPanelSizer.set_size_hints(self)
       end
 
