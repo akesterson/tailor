@@ -2,6 +2,38 @@ require 'wx'
 
 module Tailor
   module GUI
+ 
+    class TilesetPropertiesChangedEvent < Wx::CommandEvent
+      attr_accessor :padX
+      attr_accessor :padY
+      attr_accessor :pitchX
+      attr_accessor :pitchY
+      attr_accessor :gridX
+      attr_accessor :gridY
+
+      def initialize(*args)
+        super(*args)
+        @padX = args[2]['padX']
+        @padY = args[2]['padY']
+        @pitchX = args[2]['pitchX']
+        @pitchY = args[2]['pitchY']
+        @gridX = args[2]['gridX']
+        @gridY = args[2]['gridY']
+      end
+
+      def clone
+        TilesetPropertiesChangedEvent.new(self.id,
+                                          self.eventType,
+                                          { 'padX' => @padX,
+                                            'padY' => @padY,
+                                            'pitchX' => @pitchX,
+                                            'pitchY' => @pitchY,
+                                            'gridX' => @gridX,
+                                            'gridY' => @gridY }
+                                          )
+      end
+    end
+
     class TilesetProperties < Wx::Panel
       def create_method( name, &block )
         self.class.send( :define_method, name, &block )
@@ -28,6 +60,7 @@ module Tailor
           elemCtrl = Wx::TextCtrl.new(self, 
                                       Wx::ID_ANY, 
                                       value.to_s)
+          evt_text(elemCtrl) { |event| on_textChanged(event) }
           tmpsizer.add(elemCtrl, flag = Wx::EXPAND|Wx::ALIGN_RIGHT)
 
           rubyname = elem.gsub(/ /, '')
@@ -41,6 +74,25 @@ module Tailor
         end
         @sizer.set_size_hints(self)
       end
+
+      def on_textChanged(event)
+        add_pending_event(TilesetPropertiesChangedEvent.new(Wx::ID_ANY,
+                                                            EVT_TILEPROPS_CHANGED,
+                                                            { 'PadX' => @TileX,
+                                                              'PadY' => @TileY,
+                                                              'PitchX' => @SpaceX,
+                                                              'PitchY' => @SpaceY,
+                                                              'GridX' => @TileX,
+                                                              'GridY' => @TileY }
+                                                            )
+                          )
+      end
     end
+
+    EVT_TILEPROPS_CHANGED = Wx::Event.new_event_type
+    Wx::EvtHandler.register_class(TilesetPropertiesChangedEvent,
+                                  EVT_TILEPROPS_CHANGED,
+                                  "evt_tileprops_changed", 
+                                  1)
   end
 end

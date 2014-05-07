@@ -39,7 +39,7 @@ module Tailor
 
       def on_file_new
         @mainPanel = Wx::Panel.new(self)
-        @mainPanelSizer = Wx::BoxSizer.new(Wx::VERTICAL)
+        @mainPanelSizer = Wx::BoxSizer.new(Wx::HORIZONTAL)
         @mainPanel.set_sizer(@mainPanelSizer)
         @tilesetProperties = Tailor::GUI::TilesetProperties.new(@mainPanel, Wx::ID_ANY)
         @mainPanelSizer.add(@tilesetProperties)
