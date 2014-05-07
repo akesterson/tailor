@@ -1,12 +1,18 @@
 require 'wx'
 require 'Tailor/version'
+require 'Tailor/GUI/TilesetProperties'
 
 module Tailor
   module GUI
     class MainWindow < Wx::Frame
       def initialize()
         super(nil, -1, 'Tailor')
-        @mainPanel = Wx::Panel.new(self)
+        init_menubar()        
+        init_mainpanel()
+        show()
+      end
+
+      def init_menubar
         @menuBar = Wx::MenuBar.new
         menuFile = Wx::Menu.new
         menuFileNew = menuFile.append(Wx::ID_ANY, "&New\tAlt-N", "New Compilation")
@@ -30,10 +36,15 @@ module Tailor
         evt_menu(menuFileClose, :on_file_close)
         evt_menu(Wx::ID_EXIT, :on_file_exit)
         evt_menu(Wx::ID_ABOUT, :on_help_about)
-        show()
+      end
+
+      def init_mainpanel
+        @mainPanel = Wx::Panel.new(self)
+        @mainPanelSizer = Wx::BoxSizer.new(Wx::HORIZONTAL)
       end
 
       def on_file_new
+        @tilesetProperties = Tailor::GUI::TilesetProperties.new(@mainPanelSizer, Wx::ID_ANY)
       end
 
       def on_file_open
