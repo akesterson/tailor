@@ -8,7 +8,6 @@ module Tailor
       def initialize()
         super(nil, -1, 'Tailor')
         init_menubar()        
-        init_mainpanel()
         show()
       end
 
@@ -38,11 +37,8 @@ module Tailor
         evt_menu(Wx::ID_ABOUT, :on_help_about)
       end
 
-      def init_mainpanel
-        @mainPanel = Wx::Panel.new(self)
-      end
-
       def on_file_new
+        @mainPanel = Wx::Panel.new(self)
         @mainPanelSizer = Wx::BoxSizer.new(Wx::VERTICAL)
         @mainPanel.set_sizer(@mainPanelSizer)
         @tilesetProperties = Tailor::GUI::TilesetProperties.new(@mainPanel, Wx::ID_ANY)
@@ -72,8 +68,7 @@ module Tailor
       end
 
       def on_file_close
-        @mainPanel.set_sizer(nil)
-        @mainPanelSizer = nil
+        @mainPanel.destroy
       end
 
       def on_help_about
