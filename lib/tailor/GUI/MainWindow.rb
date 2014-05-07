@@ -40,11 +40,26 @@ module Tailor
 
       def init_mainpanel
         @mainPanel = Wx::Panel.new(self)
-        @mainPanelSizer = Wx::BoxSizer.new(Wx::HORIZONTAL)
       end
 
       def on_file_new
-        @tilesetProperties = Tailor::GUI::TilesetProperties.new(@mainPanelSizer, Wx::ID_ANY)
+        @mainPanelSizer = Wx::BoxSizer.new(Wx::VERTICAL)
+        @mainPanel.set_sizer(@mainPanelSizer)
+        @tilesetProperties = Tailor::GUI::TilesetProperties.new(@mainPanel, Wx::ID_ANY)
+        @mainPanelSizer.add(@tilesetProperties)
+        button = Wx::Button.new(@mainPanel, Wx::ID_ANY, "Click me")
+        evt_button(button.get_id()) { |event| on_clickme(event) }
+        @mainPanelSizer.add(button, 0, Wx::EXPAND|Wx::ALL, 2)
+        @mainPanelSizer.set_size_hints(self)
+      end
+
+      def on_clickme(event)
+        puts "Tile X: #{@tilesetProperties.TileX}"
+        puts "Tile Y: #{@tilesetProperties.TileY}"
+        puts "Pad X: #{@tilesetProperties.PadX}"
+        puts "Pad Y: #{@tilesetProperties.PadY}"
+        puts "Space X: #{@tilesetProperties.SpaceX}"
+        puts "Space Y: #{@tilesetProperties.SpaceY}"
       end
 
       def on_file_open
@@ -57,6 +72,8 @@ module Tailor
       end
 
       def on_file_close
+        @mainPanel.set_sizer(nil)
+        @mainPanelSizer = nil
       end
 
       def on_help_about
