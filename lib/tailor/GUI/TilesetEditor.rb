@@ -18,7 +18,8 @@ module Tailor
 
         tmpversizer = Wx::BoxSizer.new(Wx::VERTICAL)
         @tilesetProperties = Tailor::GUI::TilesetProperties.new(@panel, Wx::ID_ANY)
-        evt_tileprops_changed(@tilesetProperties) { |event| on_tilepropsChanged(event) }
+        #evt_tileprops_changed(@tilesetProperties) { |event| on_tilepropsChanged(event) }
+
         tmpversizer.add(@tilesetProperties, 0, flag = Wx::EXPAND|Wx::ALL)
         @cancelBtn = Wx::Button.new(@panel, Wx::ID_ANY, "Cancel")
         evt_button(@cancelBtn.get_id()) { |event| on_CancelClicked(event) }
@@ -41,7 +42,8 @@ module Tailor
         tmpversizer.add(@cancelBtn, 0, flag=Wx::EXPAND)
         rowsizer.add(tmpversizer, 0, flag = Wx::EXPAND|Wx::ALL)
 
-        @tilesetSlicer = Tailor::GUI::GridDisplay.new(@panel, Wx::ID_ANY)
+        #@tilesetSlicer = Tailor::GUI::GridDisplay.new(@panel, Wx::ID_ANY)
+        @tilesetSlicer = Tailor::GUI::ImageDisplay.new(@panel, Wx::ID_ANY)
         @tilesetSlicer.set_min_size(Wx::Size.new(320, 240))
         rowsizer.add(@tilesetSlicer, 1, flag = Wx::EXPAND|Wx::ALL)
 
