@@ -4,34 +4,16 @@ module Tailor
   module GUI
  
     class TilesetPropertiesChangedEvent < Wx::CommandEvent
-      attr_accessor :padX
-      attr_accessor :padY
-      attr_accessor :pitchX
-      attr_accessor :pitchY
-      attr_accessor :gridX
-      attr_accessor :gridY
-
-      def initialize(*args)
-        super(args[0])
-        @padX = args[2]['padX']
-        @padY = args[2]['padY']
-        @pitchX = args[2]['pitchX']
-        @pitchY = args[2]['pitchY']
-        @gridX = args[2]['gridX']
-        @gridY = args[2]['gridY']
+      EVT_TILEPROPS_CHANGED = Wx::EvtHandler.register_class(self,
+                                                            nil,
+                                                            "evt_tileprops_changed", 
+                                                            1)
+      def initialize(source, grid)
+        super(EVT_TILEPROPS_CHANGED)
+        self.id = source.get_id
+        self.client_data = grid
       end
 
-      def clone
-        TilesetPropertiesChangedEvent.new(self.id,
-                                          self.eventType,
-                                          { 'padX' => @padX,
-                                            'padY' => @padY,
-                                            'pitchX' => @pitchX,
-                                            'pitchY' => @pitchY,
-                                            'gridX' => @gridX,
-                                            'gridY' => @gridY }
-                                          )
-      end
     end
 
     class TilesetProperties < Wx::Panel
@@ -59,8 +41,9 @@ module Tailor
                        flag = Wx::EXPAND|Wx::ALIGN_LEFT)
           elemCtrl = Wx::TextCtrl.new(self, 
                                       Wx::ID_ANY, 
-                                      value.to_s)
-          evt_text(elemCtrl) { |event| on_textChanged(event) }
+                                      value.to_s,
+                                      :style => Wx::TE_PROCESS_ENTER)
+          evt_text_enter(elemCtrl) { |event| on_textChanged(event) }
           tmpsizer.add(elemCtrl, flag = Wx::EXPAND|Wx::ALIGN_RIGHT)
 
           rubyname = elem.gsub(/ /, '')
@@ -68,7 +51,7 @@ module Tailor
             elemCtrl.set_value(val)
           }
           create_method( "#{rubyname}".to_sym ) { 
-            elemCtrl.get_value
+            elemCtrl.get_value.to_i
           }
           @sizer.add(tmpsizer)
         end
@@ -76,23 +59,17 @@ module Tailor
       end
 
       def on_textChanged(event)
-        add_pending_event(TilesetPropertiesChangedEvent.new(Wx::ID_ANY,
-                                                            EVT_TILEPROPS_CHANGED,
-                                                            { 'PadX' => @TileX,
-                                                              'PadY' => @TileY,
-                                                              'PitchX' => @SpaceX,
-                                                              'PitchY' => @SpaceY,
-                                                              'GridX' => @TileX,
-                                                              'GridY' => @TileY }
-                                                            )
-                          )
+        grid = { 'gridX' => self.TileX,
+          'gridY' => self.TileY,
+          'pitchX' => self.SpaceX,
+          'pitchY' => self.SpaceY,
+          'padX' => self.PadX,
+          'padY' => self.PadY }
+        evt = TilesetPropertiesChangedEvent.new(self, grid)
+        event_handler.process_event(evt)
+        puts "Emitted TilesetPropertiesChangedEvent #{evt.inspect} (#{evt.client_data}) from (#{grid})"
       end
     end
 
-    EVT_TILEPROPS_CHANGED = Wx::Event.new_event_type
-    Wx::EvtHandler.register_class(TilesetPropertiesChangedEvent,
-                                  EVT_TILEPROPS_CHANGED,
-                                  "evt_tileprops_changed", 
-                                  1)
   end
 end

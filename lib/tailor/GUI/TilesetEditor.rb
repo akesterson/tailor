@@ -98,12 +98,13 @@ module Tailor
       end
 
       def on_tilepropsChanged(event)
-        @tilesetSlicer.set_grid(event.padX,
-                                event.padY,
-                                event.pitchX,
-                                event.pitchY,
-                                event.gridX,
-                                event.gridY
+        puts "Tileset properties changed : #{event.inspect} #{event.client_data}"
+        @tilesetSlicer.set_grid(event.client_data['padX'],
+                                event.client_data['padY'],
+                                event.client_data['pitchX'],
+                                event.client_data['pitchY'],
+                                event.client_data['gridX'],
+                                event.client_data['gridY']
                                 )
       end
 

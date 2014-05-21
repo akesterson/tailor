@@ -8,63 +8,55 @@ module Tailor
       def initialize(*args)
         super(*args)
         @imageGrid = nil
-        @padX = 0
-        @padY = 0
-        @pitchX = 0
-        @pitchY = 0
-        @gridX = 32
-        @gridY = 32
+        @pristineImage = nil
       end
 
       def set_image(image)
-        _super.set_image(image)
-        @imageGrid = Wx::Bitmap.new(@image.get_width(),
-                                    @image.get_height(),
-                                    32
-                                    )
-        set_grid(@padX, @padY, @pitchX, @pitchY, @gridX, @gridY)
+        @pristineImage = image
+        set_grid(0, 0, 0, 0, 32, 32)
       end
 
       def set_grid(padX, padY, pitchX, pitchY, gridX, gridY)
-        @padX = padX
-        @padY = padY
-        @pitchX = pitchX
-        @pitchY = pitchY
-        @gridX = gridX
-        @gridY = gridY
-
+        @imageGrid = Wx::Bitmap.new(@pristineImage.get_width(),
+                                    @pristineImage.get_height(),
+                                    @pristineImage.get_depth()
+                                    )
         @imageGrid.draw() { |dc|
-          dc.draw_bitmap(@image, 0, 0, true)
-          stepx = @gridX + @pitchX
+          dc.clear
+          dc.draw_bitmap(@pristineImage, 0, 0, true)
+          stepx = gridX + pitchX
           stepx = 1 unless stepx != 0
-          stepy = @gridY + @pitchY
+          stepy = gridY + pitchY
           stepy = 1 unless stepy != 0
-          rows = ( (@image.height - @padY) / stepy )
-          columns = ( (@image.width - @padX) / stepx )
-          points = []
-          curX = @padX
-          curY = @padY
+          rows = ( (@pristineImage.height - padY) / stepy )
+          columns = ( (@pristineImage.width - padX) / stepx )
+          puts "Grid will be #{rows} tall and #{columns} wide"
+          curX = padX
+          curY = padY
 
           dc.set_brush(Wx::TRANSPARENT_BRUSH)
           dc.set_pen(Wx::RED_PEN)
 
           for row in 0..rows
             for column in 0..columns
-              dc.draw_rectangle(curX, curY, @gridX, @gridY)
+              next if ((curX + stepx + padX) > @imageGrid.get_width)
+              next if ((curY + stepy + padY) > @imageGrid.get_height)
+              dc.draw_rectangle(curX, curY, gridX, gridY)
+              puts "Drew (#{curX}, #{curY}, #{gridX}, #{gridY})"
               curX += stepx
             end
-            curX = @padX
+            curX = padX
             curY += stepy
           end
         }
+        _super.set_image(@imageGrid)
       end
 
       def on_draw(dc)
-        _super.on_draw(dc)
-        tmp=@image
-        @image=@imageGrid
-        _super.on_draw(dc)
-        @image=tmp
+       dc.set_background Wx::WHITE_BRUSH
+       dc.clear
+       return if @imageGrid == nil
+       dc.draw_bitmap(@imageGrid, 0, 0, true)
       end
 
     end
