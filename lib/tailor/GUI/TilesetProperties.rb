@@ -12,7 +12,7 @@ module Tailor
       attr_accessor :gridY
 
       def initialize(*args)
-        super(*args)
+        super(args[0])
         @padX = args[2]['padX']
         @padY = args[2]['padY']
         @pitchX = args[2]['pitchX']
