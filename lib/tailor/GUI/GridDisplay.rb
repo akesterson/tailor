@@ -3,6 +3,22 @@ require 'Tailor/GUI/ImageDisplay'
 
 module Tailor
   module GUI
+    class GridDisplaySelectedEvent < Wx::CommandEvent
+      EVT_GRIDDISPLAY_SELECTED = Wx::EvtHandler.register_class(self,
+                                                               nil,
+                                                               "evt_griddisplay_selected", 
+                                                               1)
+      def initialize(source)
+        super(EVT_GRIDDISPLAY_SELECTED)
+        self.id = source.get_id
+        self.client_data = { 
+          'size' => source.get_size,
+          'index' => source.get_selected_index,
+          'tile' => source.get_selected_tile }
+      end
+
+    end
+
     class GridDisplay < Tailor::GUI::ImageDisplay
 
       def initialize(*args)
@@ -13,6 +29,7 @@ module Tailor
         @darken_x = 0
         @darken_y = 0
         @rectlist = []
+        @selected = nil
       end
 
       def set_image(image)
@@ -34,6 +51,8 @@ module Tailor
           end
         end
         @darkenCell = tmpImage.to_bitmap
+        @darken_x = -(gridX)
+        @darken_y = -(gridY)
 
         evt_left_up() { |event| on_gridClicked(event) }
         @imageGrid.draw() { |dc|
@@ -80,8 +99,30 @@ module Tailor
           next unless rect.contains(event.get_x, event.get_y)
           @darken_x = rect.get_x
           @darken_y = rect.get_y
+          @selected = rect
+          evt = GridDisplaySelectedEvent.new(self)
+          event_handler.process_event(evt)
         end
         refresh
+      end
+
+      def get_size
+        @rectlist.length
+      end
+
+      def get_tiles
+        ret = []
+        @rectlist.each do |rect|
+          ret << @pristineImage.sub_bitmap(rect)
+        end
+      end
+
+      def get_selected_tile
+        @pristineImage.get_sub_bitmap(@selected)
+      end
+
+      def get_selected_index
+        @rectlist.index(@selected)
       end
 
     end

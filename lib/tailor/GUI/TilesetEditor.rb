@@ -10,7 +10,8 @@ module Tailor
         super(*args)
         @tilesetFilename = ""
         @tilesetImage = nil
-        
+        @tilesetNames = []
+
         @panel = Wx::Panel.new(self)
         @sizer = Wx::BoxSizer.new(Wx::VERTICAL)
 
@@ -44,6 +45,7 @@ module Tailor
         @tilesetSlicer = Tailor::GUI::GridDisplay.new(@panel, Wx::ID_ANY)
         @tilesetSlicer.set_min_size(Wx::Size.new(320, 240))
         rowsizer.add(@tilesetSlicer, 1, flag = Wx::EXPAND|Wx::ALL)
+        evt_griddisplay_selected(@tilesetSlicer) { |event| on_gridSelected(event) }
 
         tmpversizer = Wx::BoxSizer.new(Wx::VERTICAL)
         @tilesetNameCtrl = Wx::TextCtrl.new(@panel,
@@ -54,6 +56,8 @@ module Tailor
                                             Wx::ID_ANY,
                                             "Tile Name")
         tmpversizer.add(@tileNameCtrl, 0, flag = Wx::EXPAND|Wx::ALIGN_TOP)
+        evt_text(@tileNameCtrl) { |event| on_tileNameChanged(event) }
+
         @tilesetNotesCtrl = Wx::TextCtrl.new(@panel,
                                              Wx::ID_ANY,
                                              "Notes about this tileset",
@@ -91,8 +95,17 @@ module Tailor
                                 :style => Wx::FD_FILE_MUST_EXIST | Wx::FD_PREVIEW )
         if fd.show_modal == Wx::ID_OK
           @tilesetFilename = fd.get_path
+          @tilesetNames = []
           refresh_image
+          (0..(@tilesetSlicer.get_size)).each do |i|
+            @tilesetNames << "Tile #{i}"
+          end
         end
+      end
+
+      def on_gridSelected(event)
+        @tileNameCtrl.enable
+        @tileNameCtrl.set_value(@tilesetNames[event.client_data['index']])
       end
 
       def on_ExportClicked(event)
@@ -111,6 +124,10 @@ module Tailor
                                 event.client_data['gridY']
                                 )
       end
+      
+      def on_tileNameChanged(event)
+        @tilesetNames[@tilesetSlicer.get_selected_index] = @tileNameCtrl.get_value
+      end
 
       def refresh_image
         begin
@@ -122,6 +139,7 @@ module Tailor
             y = ( @tilesetImage.get_height > 400 ? 400 : @tilesetImage.get_height + 20)
             @tilesetSlicer.set_min_size(Wx::Size.new(x, y))
             @sizer.set_size_hints(self)
+            @tileNameCtrl.disable
           end
         rescue Exception => e
           puts e
