@@ -8,7 +8,11 @@ module Tailor
       def initialize(*args)
         super(*args)
         @imageGrid = nil
+        @darkenCell = nil
         @pristineImage = nil
+        @darken_x = 0
+        @darken_y = 0
+        @rectlist = []
       end
 
       def set_image(image)
@@ -21,6 +25,17 @@ module Tailor
                                     @pristineImage.get_height(),
                                     @pristineImage.get_depth()
                                     )
+        tmpImage = Wx::Image.new(gridX, gridY)
+        tmpImage.init_alpha
+        (0..gridX).each do |x|
+          (0..gridY).each do |y|
+            tmpImage.set_rgb(x, y, 0, 0, 0)
+            tmpImage.set_alpha(x, y, 150)
+          end
+        end
+        @darkenCell = tmpImage.to_bitmap
+
+        evt_left_up() { |event| on_gridClicked(event) }
         @imageGrid.draw() { |dc|
           dc.clear
           dc.draw_bitmap(@pristineImage, 0, 0, true)
@@ -30,7 +45,6 @@ module Tailor
           stepy = 1 unless stepy != 0
           rows = ( (@pristineImage.height - padY) / stepy )
           columns = ( (@pristineImage.width - padX) / stepx )
-          puts "Grid will be #{rows} tall and #{columns} wide"
           curX = padX
           curY = padY
 
@@ -42,7 +56,7 @@ module Tailor
               next if ((curX + stepx + padX) > @imageGrid.get_width)
               next if ((curY + stepy + padY) > @imageGrid.get_height)
               dc.draw_rectangle(curX, curY, gridX, gridY)
-              puts "Drew (#{curX}, #{curY}, #{gridX}, #{gridY})"
+              @rectlist << Wx::Rect.new(curX, curY, gridX, gridY)
               curX += stepx
             end
             curX = padX
@@ -53,10 +67,21 @@ module Tailor
       end
 
       def on_draw(dc)
-       dc.set_background Wx::WHITE_BRUSH
-       dc.clear
-       return if @imageGrid == nil
-       dc.draw_bitmap(@imageGrid, 0, 0, true)
+        dc.set_background Wx::WHITE_BRUSH
+        dc.clear
+        return if @imageGrid == nil
+        dc.draw_bitmap(@imageGrid, 0, 0, true)
+        return if @darkenCell == nil
+        dc.draw_bitmap(@darkenCell, @darken_x, @darken_y, true)
+      end
+
+      def on_gridClicked(event)
+        @rectlist.each do |rect|
+          next unless rect.contains(event.get_x, event.get_y)
+          @darken_x = rect.get_x
+          @darken_y = rect.get_y
+        end
+        refresh
       end
 
     end

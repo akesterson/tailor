@@ -50,6 +50,10 @@ module Tailor
                                             Wx::ID_ANY,
                                             "Tileset Name")
         tmpversizer.add(@tilesetNameCtrl, 0, flag = Wx::EXPAND|Wx::ALIGN_TOP)
+        @tileNameCtrl = Wx::TextCtrl.new(@panel,
+                                            Wx::ID_ANY,
+                                            "Tile Name")
+        tmpversizer.add(@tileNameCtrl, 0, flag = Wx::EXPAND|Wx::ALIGN_TOP)
         @tilesetNotesCtrl = Wx::TextCtrl.new(@panel,
                                              Wx::ID_ANY,
                                              "Notes about this tileset",
