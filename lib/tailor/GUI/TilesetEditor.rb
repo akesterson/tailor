@@ -100,6 +100,7 @@ module Tailor
           (0..(@tilesetSlicer.get_size)).each do |i|
             @tilesetNames << "Tile #{i}"
           end
+          @tileNameCtrl.disable
         end
       end
 
@@ -115,6 +116,16 @@ module Tailor
       end
 
       def on_tilepropsChanged(event)
+        ret = Wx::MessageDialog.new(self,
+                                    "Changing tile properties will reset all tile names. Continue?",
+                                    "WARNING").show_modal
+        return if [Wx::ID_CANCEL, Wx::ID_NO].include?(ret)
+
+        if @tileNameCtrl.is_enabled
+          @tileNameCtrl.disable 
+          @tileNameCtrl.set_value("")
+        end
+
         puts "Tileset properties changed : #{event.inspect} #{event.client_data}"
         @tilesetSlicer.set_grid(event.client_data['padX'],
                                 event.client_data['padY'],
@@ -139,7 +150,6 @@ module Tailor
             y = ( @tilesetImage.get_height > 400 ? 400 : @tilesetImage.get_height + 20)
             @tilesetSlicer.set_min_size(Wx::Size.new(x, y))
             @sizer.set_size_hints(self)
-            @tileNameCtrl.disable
           end
         rescue Exception => e
           puts e

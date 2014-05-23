@@ -38,6 +38,9 @@ module Tailor
       end
 
       def set_grid(padX, padY, pitchX, pitchY, gridX, gridY)
+        @rectlist = []
+        @selected = nil
+
         @imageGrid = Wx::Bitmap.new(@pristineImage.get_width(),
                                     @pristineImage.get_height(),
                                     @pristineImage.get_depth()

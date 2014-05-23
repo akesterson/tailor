@@ -67,7 +67,6 @@ module Tailor
           'padY' => self.PadY }
         evt = TilesetPropertiesChangedEvent.new(self, grid)
         event_handler.process_event(evt)
-        puts "Emitted TilesetPropertiesChangedEvent #{evt.inspect} (#{evt.client_data}) from (#{grid})"
       end
     end
 
