@@ -1,6 +1,7 @@
 require 'wx'
 require 'Tailor/version'
 require 'Tailor/GUI/TilesetProperties'
+require 'tailor/GUI/TilesetEditor'
 
 module Tailor
   module GUI
@@ -23,12 +24,16 @@ module Tailor
         menuFile.append_separator
         menuFileExit = menuFile.append(Wx::ID_EXIT, "E&xit\tAlt-X", "Exit Tailor")
         @menuBar.append(menuFile, "&File")
+        menuEdit = Wx::Menu.new
+        menuEditTileset = menuEdit.append(Wx::ID_ANY, "&Tileset\tAlt-T", "Edit Tileset")
+        @menuBar.append(menuEdit, "&Edit")
         menuHelp = Wx::Menu.new
         menuHelpAbout = menuHelp.append(Wx::ID_ABOUT, "&About...\tF1", "About Tailor")
         @menuBar.append(menuHelp, "&Help")
         self.menu_bar = @menuBar
 
         evt_menu(menuFileNew, :on_file_new)
+        evt_menu(menuEditTileset, :on_edit_tileset)
         evt_menu(menuFileOpen, :on_file_open)
         evt_menu(menuFileSave, :on_file_save)
         evt_menu(menuFileExport, :on_file_export)
@@ -43,7 +48,7 @@ module Tailor
         @mainPanel.set_sizer(@mainPanelSizer)
         @tilesetProperties = Tailor::GUI::TilesetProperties.new(@mainPanel, Wx::ID_ANY)
         @mainPanelSizer.add(@tilesetProperties)
-        button = Wx::Button.new(@mainPanel, Wx::ID_ANY, "Click me")
+        button = Wx::Button.new(@mainPanel, Wx::ID_ANY, "Open Tileset Editor")
         evt_button(button.get_id()) { |event| on_clickme(event) }
         @mainPanelSizer.add(button, 0, Wx::EXPAND|Wx::ALL, 2)
         @mainPanelSizer.set_size_hints(@mainPanel)
@@ -51,12 +56,11 @@ module Tailor
       end
 
       def on_clickme(event)
-        puts "Tile X: #{@tilesetProperties.TileX}"
-        puts "Tile Y: #{@tilesetProperties.TileY}"
-        puts "Pad X: #{@tilesetProperties.PadX}"
-        puts "Pad Y: #{@tilesetProperties.PadY}"
-        puts "Space X: #{@tilesetProperties.SpaceX}"
-        puts "Space Y: #{@tilesetProperties.SpaceY}"
+        puts "I don't do anything"
+      end
+
+      def on_edit_tileset
+        Tailor::GUI::TilesetEditor.new(self, Wx::ID_ANY, 'Tailor')
       end
 
       def on_file_open
