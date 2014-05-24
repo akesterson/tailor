@@ -1,8 +1,9 @@
+require 'wx'
 require 'tailor'
 require 'Tailor/GUI/TilesetProperties'
 require 'Tailor/GUI/TilesetDisplay'
 require 'Tailor/GUI/GridDisplay'
-
+require 'Tailor/Tileset'
 module Tailor
   module GUI
     class TilesetEditor < Wx::Frame
@@ -11,6 +12,7 @@ module Tailor
         @tilesetFilename = ""
         @tilesetImage = nil
         @tilesetNames = []
+        @tileset = nil
 
         @panel = Wx::Panel.new(self)
         @sizer = Wx::BoxSizer.new(Wx::VERTICAL)
@@ -89,6 +91,7 @@ module Tailor
       end
 
       def on_ImportClicked(event)
+        @tileset = Tailor::Tileset.new
         wildcards = "*.png;*.bmp;*.tiff;*.gif"
         fd = Wx::FileDialog.new(self, "Select tileset to import",
                                 :wildcard => wildcards,
@@ -139,8 +142,41 @@ module Tailor
                                       
       end
 
-      def on_SaveClicked(event)
-        
+      def on_SaveClicked(event)        
+        wildcards = "*.json"
+        fd = Wx::FileDialog.new(self, "Select tileset to import",
+                                :wildcard => wildcards)
+        if fd.show_modal == Wx::ID_OK
+          filename = fd.get_path
+          @tileset.tileset_name = @tilesetNameCtrl.get_value
+          @tileset.license = @tilesetLicenseCtrl.get_value
+          @tileset.notes = @tilesetNotesCtrl.get_value
+          @tileset.tile_x = @tilesetProperties.TileX
+          @tileset.tile_y = @tilesetProperties.TileY
+          @tileset.space_x = @tilesetProperties.SpaceX
+          @tileset.space_y = @tilesetProperties.SpaceY
+          @tileset.pad_x = @tilesetProperties.PadX
+          @tileset.pad_y = @tilesetProperties.PadY
+          @tileset.image = @tilesetSlicer.get_image
+
+          progdialog = Wx::ProgressDialog.new("Saving...", 
+                                              "Saving...",
+                                              @tilesetSlicer.get_size - 1,
+                                              self,
+                                              style = Wx::PD_SMOOTH | Wx::PD_AUTO_HIDE)
+          tiles = @tilesetSlicer.get_tiles
+          (0..(tiles.size-1)).each do |i|
+            @tileset.add_tile(@tilesetNames[i], tiles[i])
+          end
+
+          callback = Proc.new do |msg, tile, tileName, tileIndex|
+            progdialog.update(tileIndex)
+          end
+
+          File.open(filename, "w") do |file|
+            @tileset.write(file, callback)
+          end
+        end
       end
 
       def on_tilepropsChanged(event)

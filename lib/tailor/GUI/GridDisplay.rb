@@ -113,6 +113,10 @@ module Tailor
         @rectlist.length
       end
 
+      def get_image
+        @pristineImage
+      end
+
       def get_tiles
         ret = []
         @rectlist.each do |rect|
