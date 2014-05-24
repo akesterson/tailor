@@ -116,8 +116,10 @@ module Tailor
       def get_tiles
         ret = []
         @rectlist.each do |rect|
-          ret << @pristineImage.sub_bitmap(rect)
+          img = @pristineImage.sub_bitmap(rect)
+          ret << img
         end
+        ret
       end
 
       def get_selected_tile

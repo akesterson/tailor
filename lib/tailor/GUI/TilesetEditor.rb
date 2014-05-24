@@ -110,12 +110,41 @@ module Tailor
       end
 
       def on_ExportClicked(event)
+        dirfinder = Wx::DirDialog.new(self, message = "Choose an export folder")
+        if dirfinder.show_modal == Wx::ID_OK
+          progdialog = Wx::ProgressDialog.new("Exporting...", 
+                                              "Exporting...",
+                                              @tilesetSlicer.get_size - 1,
+                                              self,
+                                              style = Wx::PD_CAN_ABORT | Wx::PD_SMOOTH | Wx::PD_AUTO_HIDE)
+          dirname = dirfinder.get_path
+          tiles = @tilesetSlicer.get_tiles
+          (0..(tiles.size-1)).each do |i|
+            tile = tiles[i]
+            tileName = @tilesetNames[i]
+            filename = File.join(dirname, tileName) + ".png"
+            check = progdialog.update_and_check(i, "Exporting #{tileName} ... ")
+ 
+            if not check[0]
+              next
+            elsif check[1]
+              Wx::MessageDialog.new(self, 
+                                    "Export operation aborted by user!", 
+                                    style = Wx::ICON_EXCLAMATION).show_modal
+              return
+            end
+            Wx::Image.from_bitmap(tile).save_file(filename)
+          end
+        end
+                                      
       end
 
       def on_SaveClicked(event)
+        
       end
 
       def on_tilepropsChanged(event)
+        return if @tilesetSlicer.get_size < 1
         ret = Wx::MessageDialog.new(self,
                                     "Changing tile properties will reset all tile names. Continue?",
                                     "WARNING").show_modal
