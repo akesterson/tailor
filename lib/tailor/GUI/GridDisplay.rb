@@ -1,5 +1,5 @@
 require 'wx'
-require 'Tailor/GUI/ImageDisplay'
+require 'Tailor/GUI/BitmapDisplay'
 
 module Tailor
   module GUI
@@ -19,80 +19,85 @@ module Tailor
 
     end
 
-    class GridDisplay < Tailor::GUI::ImageDisplay
+    class GridDisplay < Tailor::GUI::BitmapDisplay
+
+      attr_accessor :tileset
 
       def initialize(*args)
         super(*args)
-        @imageGrid = nil
+        self.tileset = nil
+        @bitmapGrid = nil
         @darkenCell = nil
-        @pristineImage = nil
         @darken_x = 0
         @darken_y = 0
         @rectlist = []
         @selected = nil
+
+        evt_left_up() { |event| on_gridClicked(event) }
       end
 
       def set_image(image)
-        @pristineImage = image
-        set_grid(0, 0, 0, 0, 32, 32)
+        self.tileset.image = image
+        @bitmap = image.convert_to_bitmap
+        refresh_grid
       end
 
-      def set_grid(padX, padY, pitchX, pitchY, gridX, gridY)
+      def refresh_grid
         @rectlist = []
         @selected = nil
 
-        @imageGrid = Wx::Bitmap.new(@pristineImage.get_width(),
-                                    @pristineImage.get_height(),
-                                    @pristineImage.get_depth()
+        @bitmapGrid = Wx::Bitmap.new(@bitmap.get_width(),
+                                    @bitmap.get_height(),
+                                    @bitmap.get_depth()
                                     )
-        tmpImage = Wx::Image.new(gridX, gridY)
+        tmpImage = Wx::Image.new(self.tileset.tile_x, self.tileset.tile_y)
         tmpImage.init_alpha
-        (0..gridX).each do |x|
-          (0..gridY).each do |y|
+        (0..self.tileset.tile_x).each do |x|
+          (0..self.tileset.tile_y).each do |y|
             tmpImage.set_rgb(x, y, 0, 0, 0)
             tmpImage.set_alpha(x, y, 150)
           end
         end
         @darkenCell = tmpImage.to_bitmap
-        @darken_x = -(gridX)
-        @darken_y = -(gridY)
+        @darken_x = -(self.tileset.tile_x)
+        @darken_y = -(self.tileset.tile_y)
 
-        evt_left_up() { |event| on_gridClicked(event) }
-        @imageGrid.draw() { |dc|
+        stepx = self.tileset.tile_x + self.tileset.space_x
+        stepx = 1 unless stepx != 0
+        stepy = self.tileset.tile_y + self.tileset.space_y
+        stepy = 1 unless stepy != 0
+        rows = ( (@bitmap.height - self.tileset.pad_y) / stepy )
+        columns = ( (@bitmap.width - self.tileset.pad_x) / stepx )
+        curX = self.tileset.pad_x
+        curY = self.tileset.pad_y
+        
+        @bitmapGrid.draw() { |dc|
           dc.clear
-          dc.draw_bitmap(@pristineImage, 0, 0, true)
-          stepx = gridX + pitchX
-          stepx = 1 unless stepx != 0
-          stepy = gridY + pitchY
-          stepy = 1 unless stepy != 0
-          rows = ( (@pristineImage.height - padY) / stepy )
-          columns = ( (@pristineImage.width - padX) / stepx )
-          curX = padX
-          curY = padY
+          dc.draw_bitmap(@bitmap, 0, 0, true)
 
           dc.set_brush(Wx::TRANSPARENT_BRUSH)
           dc.set_pen(Wx::RED_PEN)
 
           for row in 0..rows
             for column in 0..columns
-              next if ((curX + stepx + padX) > @imageGrid.get_width)
-              next if ((curY + stepy + padY) > @imageGrid.get_height)
-              dc.draw_rectangle(curX, curY, gridX, gridY)
-              @rectlist << Wx::Rect.new(curX, curY, gridX, gridY)
+              next if ((curX + stepx + self.tileset.pad_x) > @bitmapGrid.get_width)
+              next if ((curY + stepy + self.tileset.pad_y) > @bitmapGrid.get_height)
+              dc.draw_rectangle(curX, curY, self.tileset.tile_x, self.tileset.tile_y)
+              @rectlist << Wx::Rect.new(curX, curY, self.tileset.tile_x, self.tileset.tile_y)
               curX += stepx
             end
-            curX = padX
+            curX = self.tileset.pad_x
             curY += stepy
           end
         }
-        _super.set_image(@imageGrid)
+        refresh
       end
 
       def on_draw(dc)
         dc.set_background Wx::WHITE_BRUSH
         dc.clear
-        return if @imageGrid == nil
-        dc.draw_bitmap(@imageGrid, 0, 0, true)
+        return if @bitmapGrid == nil
+        dc.draw_bitmap(@bitmapGrid, 0, 0, true)
         return if @darkenCell == nil
         dc.draw_bitmap(@darkenCell, @darken_x, @darken_y, true)
       end
@@ -113,21 +118,21 @@ module Tailor
         @rectlist.length
       end
 
-      def get_image
-        @pristineImage
+      def get_bitmap
+        @bitmap
       end
 
-      def get_tiles
+      def get_tile_bitmaps
         ret = []
         @rectlist.each do |rect|
-          img = @pristineImage.sub_bitmap(rect)
+          img = @bitmap.sub_bitmap(rect)
           ret << img
         end
         ret
       end
 
       def get_selected_tile
-        @pristineImage.get_sub_bitmap(@selected)
+        @bitmap.get_sub_bitmap(@selected)
       end
 
       def get_selected_index

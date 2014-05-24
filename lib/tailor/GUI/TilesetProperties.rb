@@ -8,10 +8,9 @@ module Tailor
                                                             nil,
                                                             "evt_tileprops_changed", 
                                                             1)
-      def initialize(source, grid)
+      def initialize(source)
         super(EVT_TILEPROPS_CHANGED)
         self.id = source.get_id
-        self.client_data = grid
       end
 
     end
@@ -21,11 +20,23 @@ module Tailor
         self.class.send( :define_method, name, &block )
       end
 
+      def set_tileset(tileset)
+        @tileset = tileset
+        self.tile_x = @tileset.tile_x
+        self.tile_y = @tileset.tile_y
+        self.pad_x = @tileset.pad_x
+        self.pad_y = @tileset.pad_y
+        self.space_x = @tileset.space_x
+        self.space_y = @tileset.space_y
+        refresh
+      end
+
       def initialize(*args)
         super(*args)
+        @tileset = nil
         values = {
-          "Tile X"  => 32,
-          "Tile Y"  => 32,
+          "Tile X"  => 0,
+          "Tile Y"  => 0,
           "Pad X"   => 0,
           "Pad Y"   => 0,
           "Space X" => 0,
@@ -46,9 +57,13 @@ module Tailor
           evt_text_enter(elemCtrl) { |event| on_textChanged(event) }
           tmpsizer.add(elemCtrl, flag = Wx::EXPAND|Wx::ALIGN_RIGHT)
 
-          rubyname = elem.gsub(/ /, '')
-          create_method( "@#{rubyname}=".to_sym ) { |val| 
-            elemCtrl.set_value(val)
+          rubyname = elem.gsub(/ /, '_').downcase
+          create_method( "#{rubyname}=".to_sym ) { |val| 
+            if val.instance_of?(Integer) or val.instance_of?(Fixnum)
+              elemCtrl.set_value(val.to_s)
+            else
+              elemCtrl.set_value(val)
+            end
           }
           create_method( "#{rubyname}".to_sym ) { 
             elemCtrl.get_value.to_i
@@ -59,13 +74,15 @@ module Tailor
       end
 
       def on_textChanged(event)
-        grid = { 'gridX' => self.TileX,
-          'gridY' => self.TileY,
-          'pitchX' => self.SpaceX,
-          'pitchY' => self.SpaceY,
-          'padX' => self.PadX,
-          'padY' => self.PadY }
-        evt = TilesetPropertiesChangedEvent.new(self, grid)
+        return if @tileset.nil?
+        @tileset.tile_x = self.tile_x
+        @tileset.tile_y = self.tile_y
+        @tileset.space_x = self.space_x
+        @tileset.space_y = self.space_y
+        @tileset.pad_x = self.pad_x
+        @tileset.pad_y = self.pad_y
+
+        evt = TilesetPropertiesChangedEvent.new(self)
         event_handler.process_event(evt)
       end
     end

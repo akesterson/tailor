@@ -54,6 +54,8 @@ module Tailor
                                             Wx::ID_ANY,
                                             "Tileset Name")
         tmpversizer.add(@tilesetNameCtrl, 0, flag = Wx::EXPAND|Wx::ALIGN_TOP)
+        evt_text(@tilesetNameCtrl) { |event| on_tilesetNameChanged(event) }
+
         @tileNameCtrl = Wx::TextCtrl.new(@panel,
                                             Wx::ID_ANY,
                                             "Tile Name")
@@ -66,6 +68,7 @@ module Tailor
                                              Wx::DEFAULT_POSITION,
                                              Wx::DEFAULT_SIZE,
                                              Wx::TE_MULTILINE|Wx::TE_WORDWRAP)
+        evt_text(@tilesetNotesCtrl) { |event| on_tilesetNotesChanged(event) }
         @tilesetNotesCtrl.set_min_size(Wx::Size.new(200,120))
         tmpversizer.add(@tilesetNotesCtrl, 1, flag = Wx::EXPAND|Wx::ALL)
         @tilesetLicenseCtrl = Wx::TextCtrl.new(@panel,
@@ -74,6 +77,7 @@ module Tailor
                                                Wx::DEFAULT_POSITION,
                                                Wx::DEFAULT_SIZE,
                                                Wx::TE_MULTILINE|Wx::TE_WORDWRAP)
+        evt_text(@tilesetLicenseCtrl) { |event| on_tilesetLicenseChanged(event) }
         @tilesetLicenseCtrl.set_min_size(Wx::Size.new(200,120))
         tmpversizer.add(@tilesetLicenseCtrl, 1, flag = Wx::EXPAND|Wx::ALL)
 
@@ -92,6 +96,8 @@ module Tailor
 
       def on_ImportClicked(event)
         @tileset = Tailor::Tileset.new
+        @tilesetSlicer.tileset = @tileset
+        @tilesetProperties.set_tileset(@tileset)
         wildcards = "*.png;*.bmp;*.tiff;*.gif"
         fd = Wx::FileDialog.new(self, "Select tileset to import",
                                 :wildcard => wildcards,
@@ -121,7 +127,7 @@ module Tailor
                                               self,
                                               style = Wx::PD_CAN_ABORT | Wx::PD_SMOOTH | Wx::PD_AUTO_HIDE)
           dirname = dirfinder.get_path
-          tiles = @tilesetSlicer.get_tiles
+          tiles = @tilesetSlicer.get_tile_bitmaps
           (0..(tiles.size-1)).each do |i|
             tile = tiles[i]
             tileName = @tilesetNames[i]
@@ -148,23 +154,13 @@ module Tailor
                                 :wildcard => wildcards)
         if fd.show_modal == Wx::ID_OK
           filename = fd.get_path
-          @tileset.tileset_name = @tilesetNameCtrl.get_value
-          @tileset.license = @tilesetLicenseCtrl.get_value
-          @tileset.notes = @tilesetNotesCtrl.get_value
-          @tileset.tile_x = @tilesetProperties.TileX
-          @tileset.tile_y = @tilesetProperties.TileY
-          @tileset.space_x = @tilesetProperties.SpaceX
-          @tileset.space_y = @tilesetProperties.SpaceY
-          @tileset.pad_x = @tilesetProperties.PadX
-          @tileset.pad_y = @tilesetProperties.PadY
-          @tileset.image = @tilesetSlicer.get_image
 
           progdialog = Wx::ProgressDialog.new("Saving...", 
                                               "Saving...",
                                               @tilesetSlicer.get_size - 1,
                                               self,
                                               style = Wx::PD_SMOOTH | Wx::PD_AUTO_HIDE)
-          tiles = @tilesetSlicer.get_tiles
+          tiles = @tilesetSlicer.get_tile_bitmaps
           (0..(tiles.size-1)).each do |i|
             @tileset.add_tile(@tilesetNames[i], tiles[i])
           end
@@ -191,23 +187,28 @@ module Tailor
           @tileNameCtrl.set_value("")
         end
 
-        puts "Tileset properties changed : #{event.inspect} #{event.client_data}"
-        @tilesetSlicer.set_grid(event.client_data['padX'],
-                                event.client_data['padY'],
-                                event.client_data['pitchX'],
-                                event.client_data['pitchY'],
-                                event.client_data['gridX'],
-                                event.client_data['gridY']
-                                )
+        @tilesetSlicer.refresh_grid
       end
       
+      def on_tilesetNameChanged(event)
+        @tileset.tileset_name = @tilesetNameCtrl.get_value
+      end
+
+      def on_tilesetLicenseChanged(event)
+        @tileset.license = @tilesetLicenseCtrl.get_value
+      end
+
+      def on_tilesetNotesChanged(event)
+        @tileset.notes = @tilesetNotesCtrl.get_value
+      end
+
       def on_tileNameChanged(event)
         @tilesetNames[@tilesetSlicer.get_selected_index] = @tileNameCtrl.get_value
       end
 
       def refresh_image
         begin
-          @tilesetImage = Wx::Bitmap.new(@tilesetFilename)
+          @tilesetImage = Wx::Image.new(@tilesetFilename)
           if @tilesetImage.is_ok
             @tilesetSlicer.set_image @tilesetImage
             # The + 20 here is a hack to make scroll bars go away where we don't want them

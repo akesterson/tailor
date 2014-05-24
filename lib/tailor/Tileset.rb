@@ -21,8 +21,8 @@ module Tailor
       self.license = ''
       self.notes = ''
       self.tileset_name = ''
-      self.tile_x = 0
-      self.tile_y = 0
+      self.tile_x = 32
+      self.tile_y = 32
       self.space_x = 0
       self.space_y = 0
       self.pad_x = 0
@@ -31,6 +31,12 @@ module Tailor
     end
 
     def add_tile(name, image)
+      if image.instance_of?(Wx::Bitmap)
+        image = Wx::Image.from_bitmap(image)
+      elsif not image.instance_of?(Wx::Image)
+        throw TypeError("Tailor::Tileset::add_tile only accepts Wx::Image or Wx::Bitmap")
+        return
+      end
       @tiles << {"name" => name, "image" => image}
     end
 
@@ -72,9 +78,13 @@ module Tailor
       }
 
       StringIO.open do |iostream|
-        Wx::Image.from_bitmap(self.image).write(iostream, Wx::BITMAP_TYPE_PNG)
-        iostream.rewind
-        obj['image'] = Base64.encode64(iostream.read)
+        if self.image.nil?
+          obj['image']=nil
+        else
+          self.image.write(iostream, Wx::BITMAP_TYPE_PNG)
+          iostream.rewind
+          obj['image'] = Base64.encode64(iostream.read)
+        end
       end
 
       idx = 0
@@ -83,7 +93,7 @@ module Tailor
           if not callback.nil?
             callback.call("Converting to base64", tile['image'], tile['name'], idx)
           end
-          Wx::Image.from_bitmap(tile['image']).write(iostream, Wx::BITMAP_TYPE_PNG)
+          tile['image'].write(iostream, Wx::BITMAP_TYPE_PNG)
           iostream.rewind
           data = {
             "name" => tile['name'],
