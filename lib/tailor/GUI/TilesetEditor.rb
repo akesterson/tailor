@@ -23,21 +23,26 @@ module Tailor
         @tilesetProperties = Tailor::GUI::TilesetProperties.new(@panel, Wx::ID_ANY)
         evt_tileprops_changed(@tilesetProperties) { |event| on_tilepropsChanged(event) }
         tmpversizer.add(@tilesetProperties, 0, flag = Wx::EXPAND|Wx::ALL)
-        @cancelBtn = Wx::Button.new(@panel, Wx::ID_ANY, "Cancel")
+        @cancelBtn = Wx::Button.new(@panel, Wx::ID_ANY, "Close")
         evt_button(@cancelBtn.get_id()) { |event| on_CancelClicked(event) }
-        @importBtn = Wx::Button.new(@panel, Wx::ID_ANY, "Import")
+        @importBtn = Wx::Button.new(@panel, Wx::ID_ANY, "Import Image")
         evt_button(@importBtn.get_id()) { |event| on_ImportClicked(event) }
 
-        @exportBtn = Wx::Button.new(@panel, Wx::ID_ANY, "Export")
+        @exportBtn = Wx::Button.new(@panel, Wx::ID_ANY, "Export Images")
         evt_button(@exportBtn.get_id()) { |event| on_ExportClicked(event) }
 
-        @saveBtn = Wx::Button.new(@panel, Wx::ID_ANY, "Save")
+        @loadBtn = Wx::Button.new(@panel, Wx::ID_ANY, "Load JSON")
+        evt_button(@loadBtn.get_id()) { |event| on_LoadClicked(event) }
+
+        @saveBtn = Wx::Button.new(@panel, Wx::ID_ANY, "Save JSON")
         evt_button(@saveBtn.get_id()) { |event| on_SaveClicked(event) }
 
         tmpversizer.add_spacer(20)
         tmpversizer.add(@importBtn, 0, flag=Wx::EXPAND)
         tmpversizer.add_spacer(20)
         tmpversizer.add(@exportBtn, 0, flag=Wx::EXPAND)
+        tmpversizer.add_spacer(20)
+        tmpversizer.add(@loadBtn, 0, flag=Wx::EXPAND)
         tmpversizer.add_spacer(20)
         tmpversizer.add(@saveBtn, 0, flag=Wx::EXPAND)
         tmpversizer.add_spacer(20)
@@ -103,8 +108,8 @@ module Tailor
                                 :wildcard => wildcards,
                                 :style => Wx::FD_FILE_MUST_EXIST | Wx::FD_PREVIEW )
         if fd.show_modal == Wx::ID_OK
-          @tilesetFilename = fd.get_path
           @tilesetNames = []
+          @tilesetImage = Wx::Image.new(fd.get_path)
           refresh_image
           (0..(@tilesetSlicer.get_size)).each do |i|
             @tilesetNames << "Tile #{i}"
@@ -146,6 +151,26 @@ module Tailor
           end
         end
                                       
+      end
+
+      def on_LoadClicked(event)
+        @tileset = Tailor::Tileset.new
+        wildcards = "*.json"
+        fd = Wx::FileDialog.new(self, "Select tileset to load",
+                                :wildcard => wildcards,
+                                :style => Wx::FD_FILE_MUST_EXIST)
+        if fd.show_modal == Wx::ID_OK
+          @tileset.from_json(JSON.parse(File.read(fd.get_path)))
+          # FIXME : This is redundant.
+          @tileset.tiles.each do |tile|
+            @tilesetNames << tile['name']
+          end
+          @tilesetImage = @tileset.image
+          @tileNameCtrl.disable
+          @tilesetSlicer.tileset = @tileset
+          @tilesetProperties.set_tileset(@tileset)
+          refresh_image
+        end
       end
 
       def on_SaveClicked(event)        
@@ -208,7 +233,6 @@ module Tailor
 
       def refresh_image
         begin
-          @tilesetImage = Wx::Image.new(@tilesetFilename)
           if @tilesetImage.is_ok
             @tilesetSlicer.set_image @tilesetImage
             # The + 20 here is a hack to make scroll bars go away where we don't want them

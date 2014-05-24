@@ -15,6 +15,7 @@ module Tailor
     attr_accessor :space_y
     attr_accessor :pad_x
     attr_accessor :pad_y
+    attr_accessor :tiles
 
     def initialize
       self.image = nil
@@ -27,9 +28,9 @@ module Tailor
       self.space_y = 0
       self.pad_x = 0
       self.pad_y = 0
-      @tiles = []
+      self.tiles = []
     end
-
+    
     def add_tile(name, image)
       if image.instance_of?(Wx::Bitmap)
         image = Wx::Image.from_bitmap(image)
@@ -37,18 +38,20 @@ module Tailor
         throw TypeError("Tailor::Tileset::add_tile only accepts Wx::Image or Wx::Bitmap")
         return
       end
-      @tiles << {"name" => name, "image" => image}
+      self.tiles << {"name" => name, "image" => image}
     end
-
+    
     def get_tile(elem)
       if elem.instance_of?(String)
-        @tiles.each do
+        self.tiles.each do
           if tile['name'] == elem
             return tile['image']
           end
         end
       elsif elem.instance_of?(Integer)
-        return @tiles[elem]['image']
+        if elem <= self.tiles.size
+          return self.tiles[elem]['image']
+        end
       end
     end
 
@@ -60,6 +63,34 @@ module Tailor
       io_obj.write(JSON.pretty_generate(obj))
     end
 
+    def from_json(js)
+      self.tileset_name = js['name']
+      self.license = js['license']
+      self.notes = js['notes']
+      self.tile_x = js['dimensions']['tile_x']
+      self.tile_y = js['dimensions']['tile_y']
+      self.space_x = js['dimensions']['space_x']
+      self.space_y = js['dimensions']['space_y']
+      self.pad_x = js['dimensions']['pad_x']
+      self.pad_y = js['dimensions']['pad_y']
+      StringIO.open do |iostream|
+        iostream.write(Base64.decode64(js['image']))
+        iostream.rewind
+        self.image = Wx::Image.read(iostream, Wx::BITMAP_TYPE_PNG)
+      end
+      self.tiles = []
+      js['tiles'].each do |tile|
+        StringIO.open do |iostream|
+          iostream.write(Base64.decode64(tile['image']))
+          iostream.rewind
+          self.tiles << {
+            'name' => tile['name'], 
+            'image' => Wx::Image.read(iostream, Wx::BITMAP_TYPE_PNG)
+          }
+        end
+      end
+    end
+    
     def to_json(callback = nil)
       obj = {
         "name" => self.tileset_name,
@@ -76,7 +107,7 @@ module Tailor
         "image" => "",
         "tiles" => []
       }
-
+      
       StringIO.open do |iostream|
         if self.image.nil?
           obj['image']=nil
@@ -88,7 +119,7 @@ module Tailor
       end
 
       idx = 0
-      @tiles.each do |tile|
+      self.tiles.each do |tile|
         StringIO.open do |iostream|
           if not callback.nil?
             callback.call("Converting to base64", tile['image'], tile['name'], idx)
@@ -103,8 +134,9 @@ module Tailor
         end
         idx += 1
       end
-
+      
       obj
     end
+    
   end
 end
