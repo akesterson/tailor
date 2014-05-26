@@ -1,33 +1,54 @@
 require 'Tailor/Tileset'
-require 'singleton'
 
 module Tailor
   class Library
-    include Singleton
     
-    attr_accessor :tilesets
-
     def initialize
-      self.tilesets = []
+      @tilesets = []
     end
 
     def tileset_names
       x = []
       idx = 0
-      self.tilesets.each do |tileset|
-        x << [idx, tileset.tileset_name]
+      @tilesets.each do |tileset|
+        x << tileset.tileset_name
         idx += 1
+      end
+      x
+    end
+
+    def each
+      @tilesets.each do |tileset|
+        yield tileset
       end
     end
 
-    def unload_tileset(tileset)
-      self.tilesets.delete(tileset)
+    def delete(tileset)
+      if tileset.instance_of?(String)
+        @tilesets.delete(by_name(tileset))
+      end
+      @tilesets.delete(tileset)
     end
 
-    def add_tileset(path)
+    def add_tileset(tileset)
+      @tilesets << tileset if tileset.instance_of?(Tailor::Tileset)
+    end
+
+    def load_tileset(path)
       ts = Tailor::Tileset.new
-      ts.from_json(JSON.parse(File.read(path)))
-      self.tilesets << ts
+      ts.from_file(path)
+      @tilesets << ts
+      return ts
+    end
+
+    def by_name(name)
+      @tilesets.each do |ts|
+        return ts if ts.tileset_name == name
+      end
+    end
+
+    def by_index(idx)
+      return @tilesets[idx]
     end
 
   end

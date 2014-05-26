@@ -18,6 +18,7 @@ module Tailor
     attr_accessor :tiles
 
     def initialize
+      @filename = ''
       self.image = nil
       self.license = ''
       self.notes = ''
@@ -55,12 +56,31 @@ module Tailor
       end
     end
 
+    def get_filename
+      puts @filename
+      return @filename
+    end
+
     def write(io_obj, callback = nil)
       obj = self.to_json(callback)
       if not callback.nil?
         callback.call("Saving JSON...", nil, '', 0)
       end
       io_obj.write(JSON.pretty_generate(obj))
+    end
+
+    def to_file(filename)
+      @filename = filename
+      File.open(filename, "w") do |file|
+        write(file)
+      end
+    end
+
+    def from_file(filename)
+      @filename = filename
+      File.open(filename, "r") do |file|
+        from_json(JSON.parse(file.read))
+      end
     end
 
     def from_json(js)

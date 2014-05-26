@@ -19,7 +19,7 @@ module Tailor
 
     end
 
-    class GridDisplay < Tailor::GUI::BitmapDisplay
+    class GridDisplay < Wx::ScrolledWindow
 
       attr_accessor :tileset
 
@@ -36,9 +36,16 @@ module Tailor
         evt_left_up() { |event| on_gridClicked(event) }
       end
 
+      def set_tileset(tileset)
+        self.tileset = tileset
+        @bitmap = tileset.image.convert_to_bitmap
+        refresh_grid
+      end
+
       def set_image(image)
         self.tileset.image = image
         @bitmap = image.convert_to_bitmap
+        set_scrollbars(1, 1, @bitmap.width, @bitmap.height)
         refresh_grid
       end
 

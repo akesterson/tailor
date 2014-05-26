@@ -1,5 +1,6 @@
 require 'wx'
 require 'tailor/GUI/MainWindow'
+require 'tailor/Library'
 
 module Tailor
   module GUI

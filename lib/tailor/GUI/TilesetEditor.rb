@@ -7,8 +7,14 @@ require 'Tailor/Tileset'
 module Tailor
   module GUI
     class TilesetEditor < Wx::Frame
+
+      attr_accessor :has_saved
+      attr_accessor :has_loaded
+
       def initialize(*args)
         super(*args)
+        self.has_saved = false
+        self.has_loaded = false
         @tilesetFilename = ""
         @tilesetImage = nil
         @tilesetNames = []
@@ -49,7 +55,11 @@ module Tailor
         tmpversizer.add(@cancelBtn, 0, flag=Wx::EXPAND)
         rowsizer.add(tmpversizer, 0, flag = Wx::EXPAND|Wx::ALL)
 
-        @tilesetSlicer = Tailor::GUI::GridDisplay.new(@panel, Wx::ID_ANY)
+        @tilesetSlicer = Tailor::GUI::GridDisplay.new(@panel, 
+                                                      Wx::ID_ANY,
+                                                      Wx::DEFAULT_POSITION,
+                                                      Wx::DEFAULT_SIZE,
+                                                      Wx::VSCROLL | Wx::HSCROLL | Wx::ALWAYS_SHOW_SB)
         @tilesetSlicer.set_min_size(Wx::Size.new(320, 240))
         rowsizer.add(@tilesetSlicer, 1, flag = Wx::EXPAND|Wx::ALL)
         evt_griddisplay_selected(@tilesetSlicer) { |event| on_gridSelected(event) }
@@ -92,7 +102,14 @@ module Tailor
 
         @panel.set_sizer(@sizer)
         @sizer.set_size_hints(self)
-        show()
+      end
+
+      def disable_load
+        @loadBtn.disable
+      end
+
+      def disable_import
+        @importBtn.disable
       end
 
       def on_CancelClicked(event)
@@ -115,6 +132,8 @@ module Tailor
             @tilesetNames << "Tile #{i}"
           end
           @tileNameCtrl.disable
+          self.has_saved = false
+          self.has_loaded = true
         end
       end
 
@@ -153,6 +172,29 @@ module Tailor
                                       
       end
 
+      def set_tileset(tileset)
+        @tileset = tileset
+        tileset_changed
+        self.has_loaded = false
+        self.has_saved = false
+      end
+
+      def tileset_changed
+        # FIXME : This is redundant.
+        @tileset.tiles.each do |tile|
+          @tilesetNames << tile['name']
+        end
+        @tilesetImage = @tileset.image
+        @tilesetNameCtrl.set_value(@tileset.tileset_name)
+        @tilesetNotesCtrl.set_value(@tileset.notes)
+        @tilesetLicenseCtrl.set_value(@tileset.license)
+        @tileNameCtrl.disable
+        @tilesetSlicer.tileset = @tileset
+        @tilesetProperties.set_tileset(@tileset)
+        refresh_image
+        set_label("Tailor :: Tileset :: #{@tileset.tileset_name}")
+      end
+      
       def on_LoadClicked(event)
         @tileset = Tailor::Tileset.new
         wildcards = "*.json"
@@ -160,17 +202,11 @@ module Tailor
                                 :wildcard => wildcards,
                                 :style => Wx::FD_FILE_MUST_EXIST)
         if fd.show_modal == Wx::ID_OK
-          @tileset.from_json(JSON.parse(File.read(fd.get_path)))
-          # FIXME : This is redundant.
-          @tileset.tiles.each do |tile|
-            @tilesetNames << tile['name']
-          end
-          @tilesetImage = @tileset.image
-          @tileNameCtrl.disable
-          @tilesetSlicer.tileset = @tileset
-          @tilesetProperties.set_tileset(@tileset)
-          refresh_image
+          @tileset.from_file(fd.get_path)
+          tileset_changed
         end
+        self.has_saved = false
+        self.has_loaded = true
       end
 
       def on_SaveClicked(event)        
@@ -197,11 +233,13 @@ module Tailor
           File.open(filename, "w") do |file|
             @tileset.write(file, callback)
           end
+          self.has_saved = true
         end
       end
 
       def on_tilepropsChanged(event)
         return if @tilesetSlicer.get_size < 1
+        self.has_saved = false
         ret = Wx::MessageDialog.new(self,
                                     "Changing tile properties will reset all tile names. Continue?",
                                     "WARNING").show_modal
@@ -217,28 +255,28 @@ module Tailor
       
       def on_tilesetNameChanged(event)
         @tileset.tileset_name = @tilesetNameCtrl.get_value
+        self.has_saved = false
       end
 
       def on_tilesetLicenseChanged(event)
         @tileset.license = @tilesetLicenseCtrl.get_value
+        self.has_saved = false
       end
 
       def on_tilesetNotesChanged(event)
         @tileset.notes = @tilesetNotesCtrl.get_value
+        self.has_saved = false
       end
 
       def on_tileNameChanged(event)
         @tilesetNames[@tilesetSlicer.get_selected_index] = @tileNameCtrl.get_value
+        self.has_saved = false
       end
 
       def refresh_image
         begin
           if @tilesetImage.is_ok
             @tilesetSlicer.set_image @tilesetImage
-            # The + 20 here is a hack to make scroll bars go away where we don't want them
-            x = ( @tilesetImage.get_width > 600 ? 600 : @tilesetImage.get_width + 20)
-            y = ( @tilesetImage.get_height > 400 ? 400 : @tilesetImage.get_height + 20)
-            @tilesetSlicer.set_min_size(Wx::Size.new(x, y))
             @sizer.set_size_hints(self)
           end
         rescue Exception => e
