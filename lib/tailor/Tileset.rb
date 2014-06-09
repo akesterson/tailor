@@ -42,6 +42,10 @@ module Tailor
       self.tiles << {"name" => name, "image" => image}
     end
     
+    def count
+      @tiles.size
+    end
+
     def get_tile(elem)
       if elem.instance_of?(String)
         self.tiles.each do

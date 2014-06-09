@@ -23,6 +23,18 @@ module Tailor
       end
     end
 
+    def count
+      @tilesets.size
+    end
+
+    def tile_count
+      count = 0
+      @tilesets.each do |ts|
+        count += ts.count
+      end
+      count
+    end
+
     def delete(tileset)
       if tileset.instance_of?(String)
         @tilesets.delete(by_name(tileset))

@@ -67,6 +67,14 @@ module Tailor
         @palettePanel = Wx::ScrolledWindow.new(@mainPanel, Wx::ID_ANY)
         @paletteSizer = Wx::BoxSizer.new(Wx::VERTICAL)
         @paletteLibraryPanels = {}
+
+        progdialog = Wx::ProgressDialog.new("Rebuilding Palette...", 
+                                            "Rebuilding Palette...",
+                                            @collection.library.tile_count - 1,
+                                            self,
+                                            style = Wx::PD_SMOOTH | Wx::PD_AUTO_HIDE)
+
+        idx = 0
         @collection.library.each do |ts|
           tsExpandCollapseBtn = Wx::Button.new(@palettePanel, Wx::ID_ANY, ts.tileset_name)
           tsExpandCollapseBtn.set_min_size(
@@ -79,6 +87,8 @@ module Tailor
           tgridSizer = Wx::GridSizer.new(cols=2)
           evt_button(tsExpandCollapseBtn.get_id()) { |event| on_LibExpandCollapseClicked(ts) }
           ts.tiles.each do |tile|
+            progdialog.update(idx)
+            idx += 1
             tgridSizer.add(Wx::StaticBitmap.new(tpanel, Wx::ID_ANY, tile['image'].to_bitmap))
             tgridSizer.add(Wx::StaticText.new(tpanel, Wx::ID_ANY, tile['name']))
           end
