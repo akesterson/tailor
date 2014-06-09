@@ -4,6 +4,7 @@ require 'Tailor/Collection'
 require 'Tailor/GUI/TilesetProperties'
 require 'tailor/GUI/TilesetEditor'
 require 'tailor/GUI/LibraryManager'
+require 'tailor/GUI/ImageDisplay'
 
 module Tailor
   module GUI
@@ -56,15 +57,56 @@ module Tailor
         @menuLibrary.enable(@menuLibraryManager.get_id, false)
       end
 
+      def refresh_palette
+        if @palettePanel
+          @mainPanelSizer.detach(@palettePanel)
+          @palettePanel.destroy_children
+          @palettePanel.destroy
+          refresh
+        end
+        @palettePanel = Wx::ScrolledWindow.new(@mainPanel, Wx::ID_ANY)
+        @paletteSizer = Wx::BoxSizer.new(Wx::VERTICAL)
+        @paletteLibraryPanels = {}
+        @collection.library.each do |ts|
+          tsExpandCollapseBtn = Wx::Button.new(@palettePanel, Wx::ID_ANY, ts.tileset_name)
+          tsExpandCollapseBtn.set_min_size(
+                                           Wx::Size.new(256, 
+                                                        tsExpandCollapseBtn.get_size().height
+                                                        )
+                                           )
+          @paletteSizer.add(tsExpandCollapseBtn, 0, flags = Wx::GROW)
+          tpanel = Wx::Panel.new(@palettePanel, Wx::ID_ANY)
+          tgridSizer = Wx::GridSizer.new(cols=2)
+          evt_button(tsExpandCollapseBtn.get_id()) { |event| on_LibExpandCollapseClicked(ts) }
+          ts.tiles.each do |tile|
+            tgridSizer.add(Wx::StaticBitmap.new(tpanel, Wx::ID_ANY, tile['image'].to_bitmap))
+            tgridSizer.add(Wx::StaticText.new(tpanel, Wx::ID_ANY, tile['name']))
+          end
+          tpanel.set_sizer(tgridSizer)
+          @paletteLibraryPanels[ts.tileset_name] = tpanel
+          @paletteSizer.add(tpanel, 0, Wx::EXPAND|Wx::ALL)
+        end
+        @palettePanel.enable_scrolling(false, true)
+        @palettePanel.set_scroll_rate(1, 1)
+        @palettePanel.set_min_size(Wx::Size.new(256, 256))
+        @palettePanel.set_sizer(@paletteSizer)
+        @paletteSizer.set_size_hints(@palettePanel)
+        @mainPanelSizer.add(@palettePanel, 1, Wx::EXPAND|Wx::ALL)
+        @mainPanelSizer.layout
+      end
+
       def refresh_project
         @mainPanel = Wx::Panel.new(self)
         @mainPanelSizer = Wx::BoxSizer.new(Wx::HORIZONTAL)
         @mainPanel.set_sizer(@mainPanelSizer)
         @tilesetProperties = Tailor::GUI::TilesetProperties.new(@mainPanel, Wx::ID_ANY)
         @mainPanelSizer.add(@tilesetProperties)
-        button = Wx::Button.new(@mainPanel, Wx::ID_ANY, "Open Tileset Editor")
+        button = Wx::Button.new(@mainPanel, Wx::ID_ANY, "(Replace with drag and drop target)")
         evt_button(button.get_id()) { |event| on_clickme(event) }
-        @mainPanelSizer.add(button, 0, Wx::EXPAND|Wx::ALL, 2)
+        @mainPanelSizer.add(button, 1, Wx::EXPAND|Wx::ALL)
+
+        refresh_palette
+
         @mainPanelSizer.set_size_hints(@mainPanel)
         @mainPanelSizer.set_size_hints(self)
 
@@ -89,6 +131,17 @@ module Tailor
         end
       end
 
+      def on_LibExpandCollapseClicked(ts)
+        panel = @paletteLibraryPanels[ts.tileset_name]
+        if panel.is_shown
+          panel.show(show = false)
+        else
+          panel.show(show = true)
+        end
+        s = @paletteSizer.get_min_size()
+        @palettePanel.set_virtual_size(s)
+      end
+
       def on_clickme(event)
         puts "I don't do anything"
       end
@@ -98,9 +151,15 @@ module Tailor
       end
 
       def on_library_manager
-        Tailor::GUI::LibraryManager.new(self,
-                                        Wx::ID_ANY, 
-                                        'Tailor :: Library :: Manager').show
+        tlm = Tailor::GUI::LibraryManager.new(self,
+                                              Wx::ID_ANY, 
+                                              'Tailor :: Library :: Manager')
+        tlm.show
+        evt_library_changed(tlm.get_id()) { |event| on_library_changed(event) }
+      end
+
+      def on_library_changed(event)
+        refresh_palette
       end
 
       def on_file_open

@@ -3,6 +3,18 @@ require 'Tailor/Collection'
 
 module Tailor
   module GUI
+    class LibraryChangedEvent < Wx::CommandEvent
+      EVT_LIBRARY_CHANGED = Wx::EvtHandler.register_class(self,
+                                                          nil,
+                                                          "evt_library_changed", 
+                                                          1)
+      def initialize(source)
+        super(EVT_LIBRARY_CHANGED)
+        self.id = source.get_id
+      end
+
+    end
+
     class LibraryManager < Wx::Frame
       def initialize(*args)
         super(*args)
@@ -57,6 +69,7 @@ module Tailor
           idx = @tilesetList.append(@tileset.tileset_name)
           @tilesetList.set_selection(idx)
           refresh_image
+          event_handler.process_event(LibraryChangedEvent.new(self))
         end
         refresh
       end
@@ -73,6 +86,7 @@ module Tailor
         else
           @previewPane.hide
         end
+        event_handler.process_event(LibraryChangedEvent.new(self))
       end
 
       def on_ListDoubleClicked(event)
